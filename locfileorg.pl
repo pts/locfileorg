@@ -635,7 +635,7 @@ for my $fn0 (@ARGV) {
     $tags=~s@\0.*@@s;
     if ($tags ne"") {
       $HC++;
-      print "setfattr -n user.lfo.tags.modify -v ".fnq($tags)." ".
+      print "setfattr -n user.lfo.tags -v ".fnq($tags)." ".
         fnq(defined$printfn ? $printfn : $fn0)."\n";
     } else { $tags=":none" }
     #print "    $tags\n";
