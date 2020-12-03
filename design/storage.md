@@ -341,61 +341,94 @@ foo bar :: dir2/file26
 The file format of the *simple index* is line-oriented and mostly append-only. Each line (except for some marker lines) contains information about a single file, including filename (pathname), comma-delimited list of tags and some other option fields ignored at search time. A typical index file looks like this:
 
 ```
-simple index v1 signature
-at=,foo,bar, f=dir1/file11
-at=,foo,bar, this middle part is ignored f=dir1/file12
-at=,foo,bar, f=dir2/file21
-at=,foo,bar, f=dir2/file22
-at=,foo,bar, f=dir2/dir23/file231
-at=,foo,bar, f=dir2/file24
-at=,foo,bar, f=dir1/file31
-at=,foo,foobar, f=dir1/file32
-done
+this=simple-index-v1 at=1600000000
+ct=,foo,bar, f=dir1/file11
+ct=,foo,bar, this middle part is ignored f=dir1/file12
+ct=,foo,bar, f=dir2/file21
+ct=,foo,bar, f=dir2/file22
+ct=,foo,bar, f=dir2/dir23/file231
+ct=,foo,bar, f=dir2/file24
+ct=,foo,bar, f=dir1/file31
+ct=,foo,foobar, f=dir1/file32
+p=done at=1600001000 fat=1600001001
 ```
 
-Tags are never empty.
+The `ct=,...,` value contains the comma-separated list of *current tags* (in arbitrary order), including a comma at both sides. The list of tags is not empty, files without tags are not mentioned.
 
-There most be at most one line for each filename. If there are more, all except for one has to be hidden. (See later for hiding mechanisms.)
+There must be at most one line for each filename. If there are more, only one of those lines may start with `ct=`.
 
-During a partial index update:
+How to do a partial index update:
 
-1. The trailing `done` line is replaced with `stop`.
+1. Read the index file from the beginning until a line starting with `p=done`, `p=redo` or `p=half` (plus a space each) or EOF is found.
+1. If `p=redo` or `p=half` or EOF is found, then either fail with the error *another index update pending or failed* or do a repair (see below). After a successful repair, there is a `p=done` at the end, continue from there.
+1. A line starting with `p=done` (plus a space) has been encountered. If it is not followed by EOF, fail with the error *EOF exected after p=done line*.
+1. Replace the beginning of the encountered trailing `p=done` line with `p=redo`.
 1. In arbitrary order:
-   * For each new or with-tag-changes file, a new line gets appended.
-   * For each deleted, all-tags-removed or with-tag-changes file, the `at=` prefix of the corresponding old line gets replaced with `rt=`.
-1. A new `done` line is appended.
-1. The `stop` line is replaced with `cont`.
-
+   * For each new or with-tag-changes file, append a line of the form `ct=,TAGS, ...f=FILENAME`.
+   * For each deleted file, replace the beginning of the `ct=` line with `Dt=` (*deleted tag*).
+   * For each all-tags-removed files, replace the beginning of the `ct=` line with `Ft=` (*former tag*).
+   * For each with-tag-changes file, replace the beginning of the old `ct=` line with `Mt=` (*modified tag*).
+1. Append a `p=done at=TIMESTAMP fat=??????????` line (with question marks), with `TIMESTAMP` being the [Unix timestamp](https://en.wikipedia.org/wiki/Unix_time) at the time the partial index update has started (*start timestamp*).
+1. Replace the beginning of the `p=redo` line with `p=half`.
+1. Replace the beginning of all `Dt=` lines with `dt=', `Ft=` lines with `ft=`, `Mt=` lines with `mt=` in the file.
+1. Update the `fat=...` (*finish timestamp*) value in appended `p=done` line to the current Unix timestamp.
+1. Replace the beginning of the `p=half` line with `p=done`.
 
 An example index file after a partial index update of *dir2* (in which dir2/file21 has been removed, dir2/file24 has been untagged, tags of dir2/dir23/file231 have been changed, dir2/file25 and dir2/file26 have been added):
 
 ```
-simple index v1 signature
-at=,foo,bar, f=dir1/file11
-at=,foo,bar, this middle part is ignored f=dir1/file12
-rt=,foo,bar, f=dir2/file21
-at=,foo,bar, f=dir2/file22
-rt=,foo,bar, f=dir2/dir23/file231
-rt=,foo,bar, f=dir2/file24
-at=,foo,bar, f=dir1/file31
-at=,foo,foobar, f=dir1/file32
-cont
-at=,bar,quux, f=dir2/dir23/file231
-at=,foo,bar, f=dir2/file25
-at=,foo,bar, f=dir2/file25
-done
+this=simple-index-v1 at=1600000000
+ct=,foo,bar, f=dir1/file11
+ct=,foo,bar, this middle part is ignored f=dir1/file12
+lt=,foo,bar, f=dir2/file21
+ct=,foo,bar, f=dir2/file22
+lt=,foo,bar, f=dir2/dir23/file231
+lt=,foo,bar, f=dir2/file24
+ct=,foo,bar, f=dir1/file31
+ct=,foo,foobar, f=dir1/file32
+p=cont at=1600001000 fat=1600001001
+ct=,bar,quux, f=dir2/dir23/file231
+ct=,foo,bar, f=dir2/file25
+ct=,foo,bar, f=dir2/file25
+p=cont at=1600002000 fat=1600002001
 ```
 
-During search the index file is read sequentially form the beginning. For each line:
+Run a search like this:
 
-* If the line starts with `at=,`, do the tag match, and print the filename on a match. (Print and forget immediately, don't keep matching files in memory.)
-* Otherwise, if the line starts with `stop` or `done`, stop.
-* Otherwise, ignore the line.
+1. For each line from the beginning in the index file:
+   * If the line starts with `at=,`, do the tag match, and print the filename on a match. (Print and forget immediately, don't keep matching files in memory.)
+   * Otherwise, if the line starts with `p=done`, stop completely.
+   * Otherwise, if the line starts with `p=redo`, stop processing the index file, and continue below.
+   * Otherwise, ignore the line.
+1. Seek back to the beginning of the index file, and for each line:
+   * If the line starts with `at=,`, `Ct=,`, `Dt=,` or `Mt=,`, do the tag match, and print the filename on a match. (Print and forget immediately, don't keep matching files in memory.)
+   * Otherwise, if the line starts with `p=done` or `p=redo`, stop completely.
+   * Otherwise, ignore the line.
 
-With this design, searches may omit some results while an update is running. That's because the update has already changed `at=` to `rt=`, but it hasn't changed the `stop` to `cont` yet.
+The second scan after `p=redo` makes the search see and consider previous, to-be obsoleted tags strings when a partial index update is running (slowly) in the `p=redo` phase in another process. Without the second scan, some filename--tags pairs would be ignored.
 
-TODO: Use mandatory locking to prevent multiple parital index updates. What about network filesystems?
+Mandatory locking on the index file should be used to wrap around partial index updates. Without locking, the index file can be corrupted (e.g. more than one `p=done` line) if there are more than one partial index updates running. Some network filesystems don't respect mandary locking.
 
-TODO: Some more refinements are needed for automatic and quick recovery from a crashed (unfinished) partial index update. (Is it enough to check at search time that the file ends with `done`? No, also check `stop` in the middle.)
+A partial index update may abort unexpectedly at any point, never completing this work. Before a new partial index update can be started, the index file has to be repaired. Repair it like this:
 
-TODO: Record timestamp of each partial index update.
+1. Check the last-modification time of the index file. If the absolute difference from the current timestamp is less than 2 hours:
+   1. Check the last-modification time of the index file repeatedly: every 0.2 second for 10 seconds. Stop if it has changed.
+   1. If the last-modification time of the index file has changed in the last 10 seconds, restart from the beginning of the instructions.
+   1. (Now it's very likely that other updates on the same index files have already finished.)
+1. Read the index file from the beginning until a full line starting with `p=done`, `p=redo`, `p=half`, an incomplete line or EOF is found.
+1. If an incomplete line was found, then remove it by truncating the file, and assume that EOF was found.
+1. If EOF was found, add `p=done at=... fat=???`, setting `at=` to the Unix timestamp at the time the repair started, and `fat=` to the current Unix timestamp. Stop with success.
+1. If `p=done` was found:
+   1. If `p=done` isn't immediately followed by EOF, fail with *EOF expected after p=done line*.
+   1. If the `p=done` line has a `fat=???...` attribute (with question marks), than set to the current Unix timestamp.
+   1. Stop with success.
+1. If `p=half` was found:
+   1. Continue reading lines until a full line starting with `p=done`, `p=redo`, `p=half`, an incomplete line or EOF is found.
+   1. Unless `p=done` was found immediately followed by EOF, fail with *p=done expected after p=half*.
+   1. Replace the beginning of all `Dt=` lines with `dt=', `Ft=` lines with `ft=`, `Mt=` lines with `mt=` in the file until the first `p=half` (already found).
+   1. Replace the beginning of the `p=half` line with `p=done`, update the `fat=...` (*finish timestamp*) value to the current Unix timestamp, and rename it to `rat=...` (*repair timestamp*).
+   1. Stop.
+1. If `p=redo` was found:
+   1. Replace the beginning of all `Dt=`, `Ft=` and `Mt=` lines with `ct=` in the file until the first `p=redo` (already found).
+   1. Truncate the file after the `p=redo` line.
+   1. Replace the beginning of the `p=redo` line with `p=done`.
