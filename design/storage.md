@@ -299,13 +299,13 @@ A search with a subset query looks like this if sqlite3 was compiled with `-DSQL
 
 ```
 $ sqlite3 -batch -init /dev/null/missing -separator " :: " index.db3 "SELECT tags, filename FROM assoc WHERE tags MATCH '(foo bar NOT baz) OR quux'"
-foo bar|dir1/file11
-foo bar|dir1/file12
-foo bar|dir2/file22
-bar quux|dir2/dir23/file231
-foo bar|dir3/file31
-foo bar|dir2/file25
-foo bar|dir2/file26
+foo bar :: dir1/file11
+foo bar :: dir1/file12
+foo bar :: dir2/file22
+bar quux :: dir2/dir23/file231
+foo bar :: dir3/file31
+foo bar :: dir2/file25
+foo bar :: dir2/file26
 ```
 
 A search with a subset query looks like this if sqlite3 was compiled without `-DSQLITE_ENABLE_FTS3_PARENTHESIS`:
@@ -323,7 +323,7 @@ foo bar :: dir2/file26
 Please note that `-DSQLITE_ENABLE_FTS3_PARENTHESIS` can be detected detecting an error:
 
 ```
-$ sqlite3 -batch -init /dev/null index.db3 "SELECT 1 FROM assoc WHERE tags MATCH 'NOT' AND rowid=0 AND rowid<rowid"
+$ sqlite3 -batch -init /dev/null/missing index.db3 "SELECT 1 FROM assoc WHERE tags MATCH 'NOT' AND rowid=0 AND rowid<rowid"
 Error: malformed MATCH expression: [NOT]
 ```
 
