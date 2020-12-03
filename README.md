@@ -39,3 +39,9 @@ locfileorg uses or works with the following technologies:
 * [Midnight Commander](https://midnight-commander.org/) text-mode visual file manager (convenient selection of files to be tagged)
 
 * Bash, Zsh and other interactive shell (tagging up to millions of files with a single command)
+
+Developer documentation:
+
+* Design:
+
+  * [Where and how should tags be stored?](design/storage.md)
