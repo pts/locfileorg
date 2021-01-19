@@ -6,7 +6,7 @@ The primary location where tags are store should fulfill these requirements:
 
 * QUICKTAG: Adding and removing tags on a single file is fast.
 
-* QUICKSHOW: Showing the tags a single file is fast.
+* QUICKSHOW: Showing the tags a single file has is fast.
 
 * QUICKSEARCH: Listing all files matching the specified query (e.g. having all specified tags) is fast. It should scale for a local filesystem with 10 million files, 1 million files with tags, 10 000 directories. In many cases below a search is done by a sequential scan of all (or many) files, which is way too slow, especially on a HDD. To improve this, an index can be introduced: searching in the index is faster, but the index may be stale, and updating the index may take a long time (i.e. several hours). See in the section below for index options.
 
@@ -204,11 +204,13 @@ The simplest and slowest way of doing search (i.e. listing all files matching th
 
 The most important disadvantage of using an index for search is that stale results may be returned if the filesystem has changed since the last index update. (Updates are usually manual.)
 
-A sequential, recursive file and directory scan typically becomes too slow for interactive use with 1000 files on HDD (dominated by the per-file seek times) or 50 000 files on SSD (caused by the limited SSD IOPS and the CPU time used). (The previous numbers were reasonable in 2020.) To run searches faster, we need a database (preferably one whose backing files keep the data together, thus making the seek count low) with an index (which reduces the amount of data to be read for each search from the entire backing file to small fraction of it).
+A sequential, recursive file and directory scan typically becomes too slow for interactive use with 1000 files on HDD (dominated by the per-file seek times) or 50 000 files on SSD (caused by the limited SSD IOPS and the CPU time used). (The previous numbers were reasonable in 2020.) To run searches faster, we need a database (preferably one whose backing files keep the data together, thus making the seek count low) with an index (which reduces the amount of data to be read for each search from the entire backing file to a small fraction).
+
+To further speed up searches, files with no tags at all won't be added to the index. Thus a search for files without tags won't be able to use the index, and it would need a much slower recursive file and directory scan to complete. (The underlying assumption is that >95% of the files have no tags, and it's relatively rare to search for files without tags, thus it can be slow.)
 
 Many database systems support full-text index on a string-valued table field. A full-text index creates and maintains auxilary data structures to make subset queries fast. For example, if the subset query is *(2020 AND NOT university) OR party* (syntax may vary depending on the type of the database), then a row will match if the string contains the word *2020* and it doesn't contain the word *university*, or it contains the word *party*. When the field is inserted or updated, the database system lowercases it, splits it to words (the details are configurable), and updates its auxilary data structures accordingly. Later it executes a subset query by parsing it and making a plan how to read (parts of the) auxiliary data structures. The [inverted index](https://en.wikipedia.org/wiki/Inverted_index) (see also this [article describing Google web search](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/37043.pdf)) is a typical auxiliary data structure. The auxiliary data structure of [SQLite FTS](https://www.sqlite.org/fts3.html#data_structures) is based on cleverly encoded, prefix-compressed [B+-trees](https://en.wikipedia.org/wiki/B%2B_tree).
 
-It's possible to run tag searches very quickly (taking a few seconds for 1 million files with thags) by running a subset query on a database with a full-text index on the tags field (space-separated string containing the tags a file has), and excluding files without tags.
+It's possible to run tag searches very quickly (taking a few seconds for 1 million files with tags) by running a subset query on a database with a full-text index on the tags field (space-separated string containing the tags a file has), and excluding files without tags.
 
 Full-text index support in popular open source database systems:
 
@@ -233,7 +235,7 @@ Another idea to speed up partial index updates is splitting the index file to a 
 
 ### Working with an SQLite full-text index
 
-The minimum supported version is SQLite 3.8.0 (released on 2013-08-26), because `notindexed=` was introduced there. Only the *sqlite3* command-line tool is needed, it will be run as a subprocess.
+The minimum supported version is SQLite 3.8.0 (released on 2013-08-26), because `notindexed=` was introduced there. (As a slower fallback, earlier versions such as 3.6.0 (2008-07-16) could also work, with an FTS3 table instead of an FTS4. The FTS3 table does unnecessary indexing on the *filename* column, wasting CPU and disk space.) Only the *sqlite3* command-line tool is needed, it will be run as a subprocess.
 
 A full index rebuild looks like this:
 
