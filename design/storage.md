@@ -32,21 +32,39 @@ In most storage systems (such as databases with [ACID guarantees](https://en.wik
 
 ### File descriptions (descript.ion)
 
-* Tags are stored in a file named descript.ion in each directory. Each line of this file looks like `"filename" description` (quotes are optional if the filename doesn't contain whitespace).
+* Tags are stored in a file named descript.ion in each directory. Each line of this file looks like `"<filename>" <description><data>`. Quotes are optional if the `<filename>` doesn't contain whitespace. The `<data>` is optional (usually it's missing), it's a list of program-specific 8-bit binary strings, identified by the tag extension byte.
 
-* This descript.ion file format was introduced by 4DOS, and it's supported by some modern file management tools:
+* This descript.ion file format was introduced by 4DOS, and it's supported by these tools:
 
   * Total Commander (Windows only): Use Ctrl-*Z* to edit descriptions. For COPY and MOVE, enable, *Configuration / Options / Operation / on the bottom at File comments / Copy comments with files*. However, it will never overwrite existing comments, practically omitting the copy.
 
-  * Double Commander (cross-platform including Windows, macOS and Linux): Enable *File operations / Process comments with files/folders*.
+  * Double Commander (cross-platform including Windows, macOS and Linux): For COPY and MOVE, enable *File operations / Process comments with files/folders*.
 
-* Some image viewers such as ACDSee and XnView can display comments found in descript.ion files.
+  * FAR Manager can display file descriptions. No information about COPY and MOVE.
+
+  * [XYplorer](https://www.xyplorer.com/) stores tags in its own `tag.dat` database file, but there is a [user-contributed script](https://www.xyplorer.com/xyfc/viewtopic.php?t=9145) to import descript.ion files.
+
+  * Some image viewers such as ACDSee and XnView (press Ctrl-*D*, see [forum topic 1](https://newsgroup.xnview.com/viewtopic.php?t=32638), [forum topic 2](https://newsgroup.xnview.com/viewtopic.php?t=12389), [forum topic 3](https://newsgroup.xnview.com/viewtopic.php?f=34&p=74812#p74812)) can display descriptions found in descript.ion files. It is unclear if they support any of the binary data types identified by tag extension bytes.
+
+  * Shells developed by JP Software (4DOS, 4OS2, 4NT, TC == Take Comamnd, TCI == Tabbed Command Interface and TCC == [https://en.wikipedia.org/wiki/Take_Command_Console](Take Command Console)) can display file descriptions. No information about COPY and MOVE.
+
+  * [File Commander](https://en.wikipedia.org/wiki/File_Commander) can display file descriptions. No information about COPY and MOVE. Last release in 2011.
+
+  * [Magellan Explorer](http://www.enriva.com/) can display file descriptions. No information about COPY and MOVE. Last release (3.33) probably before 2010.
+
+  * See this [forum topic](https://jpsoft.com/forums/threads/file-managers-that-support-file-descriptions.6788/) for more file managers supporting descript.ion files.
 
 * The file format doesn't support filenames with space and " in them.
 
 * Some syntax can be introduced so that only some parts of file descriptions will be treated as tags.
 
 * It will work with all filesystems and all usual operating systems.
+
+* 4DOS had a limit of 511 bytes per file, Total Commander has a limit of 4096 bytes. This is OK in practice, because 4DOS is out of use, and lots of tags (+ filename) fit in 4096 bytes.
+
+* The precursor of the descript.ion format is the files.bbs format in ~1985. Each line in the files.bbs file looks like `<filename> <description>`.
+
+* There is a [Perl module](https://metacpan.org/release/MSDOS-Descript/source/lib/MSDOS/Descript.pm) and a [Python module](https://github.com/histrio/python-descript-ion/blob/master/src/descript/ion.py) to read and write descriptions. However, they should be examined carefully for interoperability with other tools (e.g. correct use of quotes, keeping binary data intact) and for performance.
 
 * Requirements:
 
@@ -69,6 +87,27 @@ In most storage systems (such as databases with [ACID guarantees](https://en.wik
   * QUICKEXPORT: OK.
 
   * QUICKIMPORT: OK. A bit slower if there are many existing files with descriptions in the destination directory.
+
+* More info about the descript.ion file format:
+
+  * [Original file format, without Total Commander extensions](https://web.archive.org/web/20160318122322/https://jpsoft.com/ascii/descfile.txt)
+  * [More info about the file format](https://en.wikipedia.org/wiki/Talk%3A4DOS#DESCRIPT.ION_files)
+  * [XMP (and RDF) field extensions, by Optima SC](http://www.optimasc.com/products/fileid/4dos-descext.pdf)
+
+* More info about Total Commander:
+
+  * MENU Configuration > Options > Operation > on the bottom at "File comments" >> [x] Copy comments with files
+  * Total Commander will not copy comments if the file to copy is already existend in target, because Total Commander doesn't know which comment would be newer / the wanted one.
+  * Total Commander 7.5 will support comment lengths of 4096 bytes minus name length, a space, and the extra fields (the maximum allowed according to the new descript.ion documentation). I also have my own ID now (0xC2), which I will use to mark comments containing line breaks. 0xA0 will not be used, instead I will use \n for line breaks and \\ for backslashes (only of 0xC2 is present). Thus the comment ends with \x04\xc2\x0d\0x0a ; Instead of \xc2, \xc3\x82 is used in UTF-8.
+  * Edit file comments with Ctrl+*Z* (then *F2* to save); or Files menu, Edit File Comment.
+  * Comments can be displayed with Show - Comments (Ctrl+Shift+*F2*)[1] within the file lists, or by moving the mouse over a file name. For the latter, you need to enable Win32-style tips in Configuration - Display.
+  * Refer to Total Commander help file for further information.
+  * Tip: Setup a Auto Switch Mode rule to automatically "Show comments" when you enter a folder which has descript.ion file.
+  * At first, the line length was limited to 512 characters, but from 2008 (v7.5) on Total Commander start to extent that concept and also start to use its own tag extension byte ID (0xC2) to mark comments containing line breaks, so other applications may not be able to read the whole information from the comments. Since v7.5, Total Commander supports comment lengths of 4 kBytes minus name length, a space, and the extra fields.
+  * Select one or more files; - MENU Files -> Change Attributes...; - [x] Change Plugin  * attributes:; - [More attributes] ; - | tc | comment | your text here | ; [OK]
+  * [File Descriptions plugin for Total Commander](https://ghisler.ch/board/viewtopic.php?t=9039) (not needed anymore).
+  * [TSSyncComments](https://github.com/hi5/TCSyncComments) is an obsolete Total Commander extension to copy descriptions.
+  * [Info about the descript.ion file authoring in Total Commander and elsewhere, e.g. Excel](https://ghisler.ch/board/viewtopic.php?t=52534).
 
 ### Content management system with FUSE view
 
