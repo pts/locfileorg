@@ -52,13 +52,13 @@ A search operation takes a search query string (see below), and a top-level dire
 
   * It is the search engine used by the *find* and *grep* commands in [locfileorg](https://github.com/pts/locfileorg) and [ppfiletagger](https://github.com/pts/ppfiletagger). It works by doing a recursive file and directory scan, or by reading a file containing filename--tags pairs.
 
-  * It follows symlinks to directories and files. Soon it will be changed to follow symlinks to files, but not to directories.
+  * It follows symlinks to files, but not to directories.
 
   * It can return files which don't have any tags.
 
-  * It doesn't support file type detection, it reports an error for the file type special terms (e.g. `:video`). Soon it will get support, using filename extension.
+  * It supports file type detection, by comparing the filename extension to a short, hardcoded list (e.g. it detects `*.jpeg` file is an `:image`).
 
-  * It doesn't support `ext:...`, and it reports an error if the query contains it.
+  * It supports `ext:...`.
 
 * *tagquery*
 
@@ -68,9 +68,9 @@ A search operation takes a search query string (see below), and a top-level dire
 
   * It reports an error if the query is explicitly asking for or can match files which don't have any tags.
 
-  * It supports file type detection, by comparing the filename extension to a short, hardcoded list (e.g. it detects `*.jpeg` file is an `:image`), but it's slow.
+  * It supports file type detection, by comparing the filename extension to a short, hardcoded list (e.g. it detects `*.jpeg` file is an `:image`), but it's slower than search by tag.
 
-  * It supports `ext:...`, but it's slow.
+  * It supports `ext:...`, but it's slower than search by tag.
 
 * *rmtimequery*
 
@@ -80,6 +80,6 @@ A search operation takes a search query string (see below), and a top-level dire
 
   * It reports an error if the query is explicitly asking for or can match files which don't have any tags.
 
-  * It supports file type detection, by comparing the filename extension to a short, hardcoded list (e.g. it detects `*.jpeg` file is an `:image`), but it's slow.
+  * It supports file type detection, by comparing the filename extension to a short, hardcoded list (e.g. it detects `*.jpeg` file is an `:image`), but it's slower than search by tag.
 
-  * It supports `ext:...`, but it's slow.
+  * It supports `ext:...`, but it's slower than search by tag.
