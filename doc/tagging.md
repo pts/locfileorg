@@ -1,4 +1,4 @@
-# Tagging
+# Adding and removing tags
 
 ## Introduction
 

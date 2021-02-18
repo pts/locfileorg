@@ -40,6 +40,11 @@ locfileorg uses or works with the following technologies:
 
 * Bash, Zsh and other interactive shell (tagging up to millions of files with a single command)
 
+Documentation:
+
+* [Search query syntax and search engines](doc/search.md)
+* [Adding and removing tags (introduction and details)](doc/tagging.md)
+
 Developer documentation:
 
 * Design:
