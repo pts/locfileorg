@@ -411,7 +411,7 @@ How to do a partial index update:
    * For each with-tag-changes file, replace the beginning of the old `ct=` line with `Mt=` (*modified tag*).
 1. Append a `p=done at=TIMESTAMP fat=??????????` line (with question marks), with `TIMESTAMP` being the [Unix timestamp](https://en.wikipedia.org/wiki/Unix_time) at the time the partial index update has started (*start timestamp*).
 1. Replace the beginning of the `p=redo` line with `p=half`.
-1. Replace the beginning of all `Dt=` lines with `dt=', `Ft=` lines with `ft=`, `Mt=` lines with `mt=` in the file.
+1. Replace the beginning of all `Dt=` lines with `dt=`, `Ft=` lines with `ft=`, `Mt=` lines with `mt=` in the file.
 1. Update the `fat=...` (*finish timestamp*) value in appended `p=done` line to the current Unix timestamp.
 1. Replace the beginning of the `p=half` line with `p=done`.
 
@@ -466,7 +466,7 @@ A partial index update may abort unexpectedly at any point, never completing thi
 1. If `p=half` was found:
    1. Continue reading lines until a full line starting with `p=done`, `p=redo`, `p=half`, an incomplete line or EOF is found.
    1. Unless `p=done` was found immediately followed by EOF, fail with *p=done expected after p=half*.
-   1. Replace the beginning of all `Dt=` lines with `dt=', `Ft=` lines with `ft=`, `Mt=` lines with `mt=` in the file until the first `p=half` (already found).
+   1. Replace the beginning of all `Dt=` lines with `dt=`, `Ft=` lines with `ft=`, `Mt=` lines with `mt=` in the file until the first `p=half` (already found).
    1. Replace the beginning of the `p=half` line with `p=done`, update the `fat=...` (*finish timestamp*) value to the current Unix timestamp, and rename it to `rat=...` (*repair timestamp*).
    1. Stop.
 1. If `p=redo` was found:
