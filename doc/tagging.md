@@ -58,9 +58,9 @@
   * merge mode (`+`): The specified tags will be added or removed according to the merge item rules below. This is useful for merging the tags on two copies of the same file, which were tagged independently. Details:
     * Let's suppose that two files have been tagged independently, and now you discover that they are the same, and thus they need to same tags.
     * You can use merge mode to get a merged union of tags: apply `+ <tags-of-file-A>` to file B, and/or (equivalently) `+ <tags-of-file-B>` to file A. (`v:<tag>` tags are also included here.)
-    * Sometimes it's necessary to remove tags from the union while merging: remove each `<tag>` if any the input file has `v:<tag>`, but not `<tag>`. For example, when merging 3 files with tags `foo bar`, `foo v:foo baz`, `bar v:baz`, the union is `foo v:foo bar baz v:baz`, but `baz` will be removed, because `bar v:baz` contains `v:baz` without `baz`. So the result of the merge is `foo v:foo bar v:baz`.
-    * To merge more than two files, modify the first file with tags from each other file in merge mode, and then modify each other file with tags from the first file in merge mode.
-    * Tagging software may have a convenience feature to merge file tags using the union + removal logic above, and then you don't have to understand the details of merge mode.
+    * Sometimes it's necessary to remove tags from the union while merging: remove each `<tag>` if any input file has `v:<tag>`, but not `<tag>`. For example, when merging 3 files with tags `foo bar`, `foo v:foo baz`, `bar v:baz`, the union is `foo v:foo bar baz v:baz`, but `baz` will be removed, because `bar v:baz` contains `v:baz` without `baz`. So the result of the merge is `foo v:foo bar v:baz`.
+    * To merge tags of two or more files, modify the first file with tags from each other file in merge mode, and then modify each other file with tags from the first file in merge mode.
+    * Tagging software may have a convenience feature to merge file tags. Under the hood it modifies tags in merge mode as written in the previous item.
 
 * Items in change mode:
 
